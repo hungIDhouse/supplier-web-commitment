@@ -1,12 +1,21 @@
 :root {
   color-scheme: dark;
+  --bg-sky-top: #0040a0;
+  --bg-sky-bottom: #5090f0;
+  --color-partnership: #3ecf6e;
+  --color-innovation: #e0a030;
+  --color-sustainable: #2050e0;
+  --color-value: #e0431f;
+  --flower-fill: #e8c250;
+  --text-color: #ffffff;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -15,10 +24,234 @@ html, body {
 }
 
 body {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-family: system-ui, sans-serif;
-  background: #0040a0;
-  color: #fff;
+  color: var(--text-color);
+  background: linear-gradient(180deg, var(--bg-sky-top) 0%, var(--bg-sky-bottom) 100%);
 }
+
+#app {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+}
+
+.screen.is-active {
+  display: flex;
+}
+
+/* ---- Recognition Moment screen ---- */
+
+.header {
+  flex: 0 0 auto;
+  padding: 1.5rem 1rem 0.5rem;
+  text-align: center;
+}
+
+.event-name {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.final-heading {
+  margin: 0.5rem 0 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.is-final .final-heading {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.lines-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.flower-svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* Keep in sync with the box math in updateFlows(). */
+  width: 45%;
+  height: 45%;
+  transform: translate(-50%, -50%);
+}
+
+.flow {
+  opacity: 0.85;
+  transition: opacity 0.3s ease;
+}
+
+.flow.is-selected {
+  opacity: 1;
+}
+
+.flow.is-dimmed {
+  opacity: 0.18;
+}
+
+.flow-highlight {
+  opacity: 0.3;
+}
+
+.flower-svg {
+  z-index: 2;
+}
+
+.flower-shape {
+  opacity: 0.92;
+}
+
+.flower-shape--partnership {
+  fill: var(--color-partnership);
+}
+
+.flower-shape--innovation {
+  fill: var(--color-innovation);
+}
+
+.flower-shape--sustainable {
+  fill: var(--color-sustainable);
+}
+
+.flower-shape--value {
+  fill: var(--color-value);
+}
+
+.keyword {
+  position: absolute;
+  z-index: 3;
+  /* JS pins each pill onto its flow line (updateFlows) */
+  top: -200px;
+  left: -200px;
+  transform: translate(-50%, -50%);
+  border: none;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-color);
+  /* scales with viewport: ~0.8rem on phones up to 1.25rem on desktop */
+  font-size: clamp(0.8rem, 2.4vmin, 1.25rem);
+  font-weight: 600;
+  padding: 0.45em 0.9em;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.3s ease;
+}
+
+.keyword--partnership {
+  border: 1px solid var(--color-partnership);
+}
+
+.keyword--innovation {
+  border: 1px solid var(--color-innovation);
+}
+
+.keyword--sustainable {
+  border: 1px solid var(--color-sustainable);
+}
+
+.keyword--value {
+  border: 1px solid var(--color-value);
+}
+
+.keyword.is-selected {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.keyword.is-dimmed {
+  opacity: 0.35;
+}
+
+.selected-keyword {
+  position: absolute;
+  z-index: 4;
+  top: 4%;
+  left: 50%;
+  width: 90%;
+  margin: 0;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -8px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.selected-keyword.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Final state: keep flower + flows (all bright), drop everything else */
+.is-final .keyword,
+.is-final .selected-keyword,
+.is-final .footer {
+  display: none;
+}
+
+.is-final .flow,
+.is-final .flow.is-dimmed {
+  opacity: 1;
+}
+
+.footer {
+  flex: 0 0 auto;
+  padding: 1rem 1.5rem 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.commit-btn {
+  width: 100%;
+  max-width: 320px;
+  padding: 0.9rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  border: none;
+  border-radius: 999px;
+  background: var(--flower-fill);
+  color: #3a2a00;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.commit-btn.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
