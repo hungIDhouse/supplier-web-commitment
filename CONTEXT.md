@@ -1,101 +1,63 @@
 # CONTEXT — Supplier Web Commitment (Carlsberg VN)
 
 ## Bối cảnh chung
-- **Sự kiện:** Carlsberg Vietnam Supplier Day — chủ đề *Together Brewing Tomorrow*.
+- **Sự kiện:** Carlsberg Vietnam Supplier Day 2026 — chủ đề *Together Brewing Tomorrow*.
 - **Sản phẩm:** một trang web hiệu ứng để khách mời trải nghiệm tại sự kiện.
 - **Cách phân phối:** chiếu QR code lên màn hình → khách quét → mở web trên điện thoại → trải nghiệm ngay.
-- **Lưu ý quan trọng:** brief gọi là "app" nhưng bản chất là **web**, không phải app cài đặt. Người brief không chuyên công nghệ nên dùng nhầm từ.
+- **Lưu ý quan trọng:** brief gọi là "app" nhưng bản chất là **web**, không phải app cài đặt.
 
 ## Ràng buộc
-- **Thiết bị mục tiêu:** chỉ smartphone (iOS + Android đa dạng) → ưu tiên responsive dọc + hiệu năng animation trên mobile.
-- **Không thu thập dữ liệu:** thuần frontend, không backend, không database, không lưu lựa chọn của user.
-- **Deploy:** đơn giản, static hosting (Vercel/Netlify/GitHub Pages). Không cần tên miền công ty vì user chỉ vào qua QR.
+- **Thiết bị mục tiêu:** chỉ smartphone (iOS + Android đa dạng), ưu tiên responsive dọc.
+- **Không thu thập dữ liệu:** thuần frontend, không backend, không database.
+- **Deploy:** đơn giản, static hosting (Vercel/Netlify/GitHub Pages), không cần tên miền công ty.
+- **Web tĩnh:** dùng nguyên ảnh thiết kế làm nền, không tự dựng hoa bia/dòng chảy bằng code.
 
-## Luồng hoạt động chính (CHI TIẾT — quan trọng nhất)
+## Luồng hoạt động chính (BẢN MỚI NHẤT — đã đơn giản hóa, thay thế mọi bản trước)
 
-### Khởi đầu
-- User quét QR → **vào thẳng màn Recognition Moment**, không có màn intro/welcome.
+### View 1 — màn đầu
+- User quét QR → vào thẳng View 1, không có màn intro.
+- Hiển thị: nền `view1.png` (trời xanh + hoa bia + 4 dòng chảy + keyword đã bake sẵn 
+  trong ảnh) + overlay `view1text_icon.png` (title "Carlsberg Vietnam Supplier Day 2026" 
+  + hàng 5 logo thương hiệu con + chữ "Brewing Tomorrow") đặt phía trên.
+- **KHÔNG có nút COMMIT.**
+- **KHÔNG cho chọn keyword riêng lẻ** — keyword trong ảnh chỉ là trang trí tĩnh.
+- User **chạm vào giữa màn hình (vùng hoa bia)** → chuyển thẳng sang View 2.
 
-### Màn 1 — Recognition Moment
-- Hiển thị hoa bia + **4 line dòng chảy**, mỗi line gắn 1 keyword:
-  - Partnership
-  - Innovation Co-Creation
-  - Sustainable Growth
-  - Value Creation
-- 4 line + keyword **xuất hiện dần** (animation vào), không hiện hết cùng lúc.
-- User **chạm chọn 1 keyword** trên dòng chảy:
-  - **Chỉ chọn được 1** tại một thời điểm.
-  - **Cho đổi thoải mái:** chọn A rồi đổi sang B đều được; lựa chọn cuối cùng là cái sẽ được COMMIT.
-  - Line/keyword được chọn sáng đậm, các line khác mờ đi.
-- Keyword được chọn **phóng to khổng lồ** lên trên hoa bia.
-- Nút **COMMIT** ở dưới: mờ/khóa khi chưa chọn → sáng lên sau khi chọn.
-- Bấm COMMIT → chuyển sang màn kết.
-- **Không rung, không âm thanh.**
+### View 2 — màn kết
+- Hiển thị: nền `view2.png` (trời xanh + hoa bia vàng đầy + dòng chảy) + overlay 
+  `view2text.png` (chữ "Together Brewing Tomorrow") đặt phía trên.
+- Kết thúc trải nghiệm tại đây.
 
-### Màn 2 — Together Brewing Tomorrow (màn kết)
-- Hiển thị thông điệp "Together Brewing Tomorrow" + keyword đã chọn.
-- Có badge "CONFIRMED".
+### Đã loại bỏ khỏi flow (so với các bản brief trước)
+- ~~Chọn 1/4 keyword~~
+- ~~Keyword phóng to khi chọn~~
+- ~~Nút COMMIT~~
+- ~~Badge CONFIRMED~~
+- Không rung, không âm thanh.
+
+## Asset thiết kế chính thức (đã nhận, đủ dùng — KHÔNG cần xin thêm)
+Nằm trong thư mục `asset/` của repo:
+- `view1.png` — nền full màn View 1 (1080×1920), keyword đã bake sẵn vào ảnh.
+- `view1text_icon.png` — overlay trong suốt (810×487): title + 5 logo thương hiệu 
+  con (1664, Tuborg, Somersby, Huda, Halida) + chữ "Brewing Tomorrow".
+- `view2.png` — nền full màn View 2 (1080×1920), không có chữ bake sẵn.
+- `view2text.png` — overlay trong suốt (810×352): chữ "Together Brewing Tomorrow".
+
+Lưu ý: chỉ có 5 logo thương hiệu con, không có logo Carlsberg chính riêng; không có 
+file font riêng (chữ đã bake sẵn vào ảnh nên không cần font để hiển thị đúng).
 
 ## Ngoài phạm vi web
-
-### Flow Commitment — Scene 1→4
-- **KHÔNG phải việc trên web của mình.** Đây là phần **trình chiếu** trên màn hình lớn tại sự kiện.
-- Chỉ **xem qua để tham khảo** tông màu / hướng thiết kế cho web. Không code.
+### Flow Commitment — Scene 1→4 (trình chiếu màn hình lớn tại event)
+- KHÔNG phải việc trên web của mình, chỉ tham khảo tông màu/thiết kế trước đây.
 
 ## Tech Stack
-- **Vanilla HTML/CSS/JS** (không framework — web 1 màn, ít state).
-- **Vite** — dev server hot-reload, build static tối ưu.
-- **GSAP** — animation dòng chảy + transition mượt.
-- **SVG** — hoa bia + 4 line dòng chảy (vector, sắc nét mọi màn hình).
+- Vanilla HTML/CSS/JS + Vite (dev server, build static).
+- Không cần GSAP/SVG dựng hoa bia nữa (đã chuyển sang dùng ảnh nền tĩnh).
+- Repo: `~/Project/supplier-web-commitment` (đã push GitHub `hungIDhouse/supplier-web-commitment`).
 
-## Trạng thái asset
-- `CBVN - App Brief1.pptx` — file brief gốc.
-- `TEMP-CARL-B.CO.svg` — asset tạm (logo/hoa bia?).
-- **Đang chờ:** file thiết kế giao diện chính thức từ bên design (asset hoa bia thật, màu brand chuẩn, typography, layout).
-
-## Thiết kế thị giác — Hoa bia & Dòng chảy (từ ảnh Flow Commitment scene 1/2/4)
-
-### Hình dạng hoa bia
-- Blob hữu cơ nhiều múi lồi lõm không đều (không phải hoa 4 cánh đối xứng hình học).
-- Khe lõm sâu ở đỉnh, chia đôi 2 thùy trên — điểm nhận diện chính của shape.
-- Bbox tổng thể gần vuông/tròn (~1:1).
-
-### Texture
-- Bề mặt có bọt khí lấm tấm (giống bia thật).
-- Highlight sáng vùng giữa-trên tạo khối 3D.
-- Viền ngoài có glow trắng phát sáng bao quanh, độ dày đều.
-
-### 4 dòng chảy
-- Dạng particle/light streak (nhiều sợi mảnh song song, độ dài khác nhau, motion blur) — KHÔNG phải path solid liền nét.
-- Tỏa từ 4 góc màn hình, hội tụ vào tâm hoa bia, sáng dần khi gần tâm.
-- Mỗi dòng 1 màu riêng, gắn với 1 keyword:
-  - Xanh lá (trên-trái)
-  - Xanh dương (dưới-trái)
-  - Vàng hổ phách (trên-phải)
-  - Cam đỏ (dưới-phải)
-
-### Cơ chế động khi chọn/commit (quan trọng)
-- Hoa bia được "đổ đầy" như chất lỏng từ dưới lên (vd 79% → 100%).
-- Phần chưa đầy: giữ màu dòng chảy loang trên bề mặt.
-- Phần đã đầy: chuyển hẳn sang màu vàng bia đục.
-- Tương tự cơ chế liquid-fill đã làm ở nút hold-to-confirm trước đây.
-
-### Nền
-- Trời xanh gradient + mây mờ, có chiều sâu (KHÔNG phải xanh rêu đậm như slide template).
-
-### Bảng màu tham khảo
-| Vai trò | Mã màu |
-|---|---|
-| Nền trời xanh | `#0040a0` → `#5090f0` (gradient) |
-| Dòng xanh lá | tông green tươi |
-| Dòng xanh dương | `#0040a0`–`#2050e0` |
-| Dòng vàng hổ phách | `#e0a030` |
-| Dòng cam đỏ | cam đậm |
-| Hoa bia (fill đầy) | vàng bia đục |
-| Badge CONFIRMED | nền trắng, ruy băng đỏ `#e01020`, chữ trắng nghiêng |
-
-*(Lưu ý: bảng màu xanh rêu `#10301c` ở CONTEXT bản trước là màu nền slide/template, KHÔNG phải màu nền web thật.)*
-
-- Giữ hoa bia + màu ở dạng **placeholder** cho tới khi có design thật.
-- Ưu tiên hoàn thiện **khung + luồng + animation** trước.
-- Không tự chốt Scene 1–4 khi chưa có design.
+## Ghi chú lịch sử (để tránh nhầm lẫn khi đọc lại)
+- Các bản CONTEXT trước có mô tả flow "chọn keyword + phóng to + nút COMMIT" và 
+  hướng dựng hoa bia/dòng chảy hoàn toàn bằng code (SVG/GSAP) — **đã bị thay thế** 
+  bởi bản đơn giản hóa này sau khi nhận brief mới + asset thiết kế chính thức.
+- Prompt riêng cho từng bước chỉnh sửa UI/kỹ thuật gửi trực tiếp cho Claude Code, 
+  không cần ghi lại toàn bộ vào file này.

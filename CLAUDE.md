@@ -73,5 +73,7 @@ Not-yet-implemented target look, documented in `CONTEXT.md` for when Phase 3 sta
   a directional guide only, not a final spec.
 - **Scenes 1–4** referenced in the brief are the big-screen presentation at the event —
   **out of scope, do not code them.** Use them only as color/direction reference.
-- Assets: `CBVN - App Brief1.pptx` (original brief), `TEMP-CARL-B.CO.svg` (temporary
-  placeholder asset).
+- Assets: 4 file thiết kế chính thức trong `public/asset/` (`view1.png`/`.webp`/`.jpg`,
+  `view1text_icon.png`, `view2.png`/`.webp`/`.jpg`, `view2text.png`) — xem chi tiết ở
+  `CONTEXT.md`. `CBVN - App Brief1.pptx` (brief gốc) vẫn còn trên máy để tham khảo
+  nhưng không tracked trong git (file nặng, không cần cho build).
