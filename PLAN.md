@@ -23,10 +23,16 @@
     Android đời mới) → **luôn còn letterbox trên/dưới**, không crop được. Đã thử crop
     2 bên nhưng đo pixel xác nhận chữ dòng chảy ("PARTNERSHIP" v.v.) chạy gần sát mép
     ngang (0.4%–99.7% chiều rộng) — không có lề an toàn để crop.
-  - **Quyết định (chốt):** chấp nhận sọc trên/dưới ở nhóm máy tỉ lệ < 0.5625. Ưu tiên
-    tuyệt đối "không bao giờ cắt chữ/logo/hoa bia" cao hơn thẩm mỹ không-sọc. Không xin
-    lại file design để chừa lề. Không cần revisit trừ khi có asset mới.
-  - Màu letterbox: trắng `#ffffff` (biến CSS `--letterbox-bg` trong `src/style.css`).
+  - **Quyết định (chốt):** chấp nhận vẫn còn khoảng dư trên/dưới ở nhóm máy tỉ lệ < 0.5625.
+    Ưu tiên tuyệt đối "không bao giờ cắt chữ/logo/hoa bia" cao hơn thẩm mỹ. Không xin lại
+    file design để chừa lề. Không cần revisit trừ khi có asset mới.
+  - **Lấp khoảng dư (không dùng màu phẳng):** thay vì tô màu trắng, phần dư được lấp bằng
+    1 lớp `.view-bg-fill` (trong `index.html` + `src/style.css`): chính ảnh nền đó,
+    `background-size: cover` + `filter: blur(48px)` + `transform: scale(1.4)`, đặt phía sau
+    ảnh chính (z-index 0). Khoảng dư nhìn thấy trời xanh mờ liền mạch (màn hẹp: dải trên/dưới;
+    màn ngang: dải trái/phải mang tông màu dòng chảy). Dùng lại WebP từ cache `<picture>`
+    (image-set + fallback JPG) nên không tải thêm byte. `--letterbox-bg` trắng chỉ còn là
+    fallback đáy cho trình duyệt quá cũ không hỗ trợ blur/image-set.
 
 ## Giai đoạn 2 — Logic chuyển màn (đơn giản hóa) ✅ (đã xong)
 - [x] Vào thẳng View 1, không intro.

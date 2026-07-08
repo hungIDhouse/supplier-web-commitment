@@ -53,6 +53,40 @@ body {
   overflow: hidden;
 }
 
+/* Blurred, cover-scaled copy of the same artwork sitting behind the crisp
+   contain-fit image. Its only visible parts are the letterbox gaps, where
+   it continues the artwork's sky so the bars read as seamless instead of a
+   flat --letterbox-bg color. The crisp image + overlay paint on top of it.
+   scale() overshoots the frame so blur can't reveal the frame edge. */
+.view-bg-fill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-position: center;
+  background-size: cover;
+  filter: blur(48px);
+  transform: scale(1.4);
+  pointer-events: none;
+}
+
+/* WebP is reused from the <picture> cache; JPG is the fallback for browsers
+   without image-set() (which also lack WebP), so no extra bytes are loaded. */
+.view-bg-fill--1 {
+  background-image: url('/asset/view1.jpg');
+  background-image: image-set(
+    url('/asset/view1.webp') type('image/webp'),
+    url('/asset/view1.jpg') type('image/jpeg')
+  );
+}
+
+.view-bg-fill--2 {
+  background-image: url('/asset/view2.jpg');
+  background-image: image-set(
+    url('/asset/view2.webp') type('image/webp'),
+    url('/asset/view2.jpg') type('image/jpeg')
+  );
+}
+
 /* Position/size set in px by main.js (computeImageTransform) so the crop
    math and the overlay/tap-zone placement all share one source of truth. */
 .view-bg,
@@ -61,6 +95,11 @@ body {
   display: block;
 }
 
+.view-bg {
+  z-index: 1;
+}
+
 .view-overlay {
+  z-index: 2;
   pointer-events: none;
 }

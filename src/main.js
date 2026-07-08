@@ -16,18 +16,19 @@ const ART_RATIO = ART_W / ART_H; // 0.5625
 
 // Browser chrome (address bar / nav bar) eats into viewport height on real
 // phones, making the visible area "wider" than the artwork → plain CONTAIN
-// then leaves ugly side bars. Fixed by zooming to fill the width and
-// cropping the excess off the BOTTOM only, bounded by MAX_BOTTOM_CROP —
-// verified against the actual artwork that this only trims the fading
-// sparkle trail near the bottom corners, never the flower or the label
-// text (label text's lowest point measured at y=64.9%, crop starts at 80%).
+// then leaves side bars. Fixed by zooming to fill the width and cropping the
+// excess off the BOTTOM only, bounded by MAX_BOTTOM_CROP — verified against
+// the actual artwork that this only trims the fading sparkle trail near the
+// bottom corners, never the flower or the label text (label text's lowest
+// point measured at y=64.9%, crop starts at 80%).
 //
-// The opposite case — a container NARROWER than the artwork (very tall
-// phone screens, e.g. 412x905) — cannot be fixed the same way by cropping
-// the sides: the flow-streak label text ("PARTNERSHIP" etc.) runs almost
+// The opposite case — a container NARROWER than the artwork (very tall phone
+// screens, e.g. 412x905) — cannot be fixed the same way by cropping the
+// sides: the flow-streak label text ("PARTNERSHIP" etc.) runs almost
 // edge-to-edge (measured x=0.4%-99.7% of width), so there is no safe
-// horizontal crop budget. That case always falls back to plain CONTAIN
-// (top/bottom letterbox, uncapped) rather than clip real text.
+// horizontal crop budget. That case falls back to plain CONTAIN (top/bottom
+// letterbox). Whatever letterbox gap survives either case is filled by the
+// blurred .view-bg-fill layer, so it never shows as a flat bar.
 const MAX_BOTTOM_CROP = 0.2; // fraction of the image's native height
 const MAX_FILL_RATIO = ART_RATIO / (1 - MAX_BOTTOM_CROP); // ~0.703
 
@@ -56,7 +57,7 @@ function computeImageTransform(cw, ch) {
   if (containerRatio <= ART_RATIO) {
     // Container taller/narrower than the artwork: no safe horizontal crop
     // budget (see comment above) — CONTAIN, width-bound, letterbox
-    // top/bottom (uncapped).
+    // top/bottom (blur-filled).
     const scale = cw / ART_W;
     const offsetY = (ch - ART_H * scale) / 2;
     return { scale, offsetX: 0, offsetY };
@@ -71,7 +72,7 @@ function computeImageTransform(cw, ch) {
 
   // Too wide (tablet landscape, unfolded fold, desktop): cropping enough
   // to fill the width would cut into real content, so fall back to
-  // CONTAIN, height-bound, letterbox left/right.
+  // CONTAIN, height-bound, letterbox left/right (blur-filled).
   const scale = ch / ART_H;
   const offsetX = (cw - ART_W * scale) / 2;
   return { scale, offsetX, offsetY: 0 };

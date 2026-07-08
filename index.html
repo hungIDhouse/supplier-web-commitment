@@ -9,6 +9,9 @@
     <div id="app">
       <section id="view-1" class="view is-active">
         <div class="view-frame">
+          <!-- Blurred cover layer fills the letterbox gaps with the artwork's
+               own sky so the bars blend in instead of showing a flat color. -->
+          <div class="view-bg-fill view-bg-fill--1"></div>
           <picture>
             <source srcset="/asset/view1.webp" type="image/webp" />
             <img class="view-bg" src="/asset/view1.jpg" alt="" />
@@ -19,6 +22,7 @@
 
       <section id="view-2" class="view">
         <div class="view-frame">
+          <div class="view-bg-fill view-bg-fill--2"></div>
           <picture>
             <source srcset="/asset/view2.webp" type="image/webp" />
             <img class="view-bg" src="/asset/view2.jpg" alt="" />
