@@ -9,24 +9,25 @@
     <div id="app">
       <section id="view-1" class="view is-active">
         <div class="view-frame">
-          <!-- Blurred cover layer fills the letterbox gaps with the artwork's
-               own sky so the bars blend in instead of showing a flat color. -->
-          <div class="view-bg-fill view-bg-fill--1"></div>
-          <picture>
-            <source srcset="/asset/view1.webp" type="image/webp" />
-            <img class="view-bg" src="/asset/view1.jpg" alt="" />
-          </picture>
+          <!-- Layer stack, bottom to top: sky (full-frame cover, also fills
+               any letterbox gap left by the contain-fit layers above it) →
+               flow lines → hop flower → text/logo overlay. -->
+          <img class="view-sky" src="/asset/backgroundsky.webp" alt="" />
+          <img class="view-line" src="/asset/liquid_lineview1.webp" alt="" />
+          <!-- Short glowing streaks travel inward along the 4 flow curves;
+               sized/positioned by main.js to match the line/flower layers. -->
+          <canvas class="view-particles" aria-hidden="true"></canvas>
+          <img class="view-flower" src="/asset/hoabeerview1.webp" alt="" />
           <img class="view-overlay" src="/asset/view1text_icon.png" alt="" />
         </div>
       </section>
 
       <section id="view-2" class="view">
         <div class="view-frame">
-          <div class="view-bg-fill view-bg-fill--2"></div>
-          <picture>
-            <source srcset="/asset/view2.webp" type="image/webp" />
-            <img class="view-bg" src="/asset/view2.jpg" alt="" />
-          </picture>
+          <img class="view-sky" src="/asset/backgroundsky.webp" alt="" />
+          <img class="view-line" src="/asset/liquid_lineview2.webp" alt="" />
+          <canvas class="view-particles" aria-hidden="true"></canvas>
+          <img class="view-flower" src="/asset/hoabiaview2.webp" alt="" />
           <img class="view-overlay" src="/asset/view2text.png" alt="" />
         </div>
       </section>

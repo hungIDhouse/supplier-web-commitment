@@ -44,7 +44,7 @@ body {
   pointer-events: auto;
 }
 
-/* Fills the view exactly; clips the bg image when main.js's transform
+/* Fills the view exactly; clips the layers above when main.js's transform
    crops a bit off the bottom to avoid side letterbox on phone-shaped
    viewports (see computeImageTransform in main.js). */
 .view-frame {
@@ -53,53 +53,101 @@ body {
   overflow: hidden;
 }
 
-/* Blurred, cover-scaled copy of the same artwork sitting behind the crisp
-   contain-fit image. Its only visible parts are the letterbox gaps, where
-   it continues the artwork's sky so the bars read as seamless instead of a
-   flat --letterbox-bg color. The crisp image + overlay paint on top of it.
-   scale() overshoots the frame so blur can't reveal the frame edge. */
-.view-bg-fill {
+/* Real sky artwork, cover-scaled to the full frame. Sits under the
+   contain-fit line/flower layers and is what shows through any letterbox
+   gap they leave — no separate blur/gradient fill trick needed. */
+.view-sky {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background-position: center;
-  background-size: cover;
-  filter: blur(48px);
-  transform: scale(1.4);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   pointer-events: none;
 }
 
-/* WebP is reused from the <picture> cache; JPG is the fallback for browsers
-   without image-set() (which also lack WebP), so no extra bytes are loaded. */
-.view-bg-fill--1 {
-  background-image: url('/asset/view1.jpg');
-  background-image: image-set(
-    url('/asset/view1.webp') type('image/webp'),
-    url('/asset/view1.jpg') type('image/jpeg')
-  );
-}
-
-.view-bg-fill--2 {
-  background-image: url('/asset/view2.jpg');
-  background-image: image-set(
-    url('/asset/view2.webp') type('image/webp'),
-    url('/asset/view2.jpg') type('image/jpeg')
-  );
-}
-
 /* Position/size set in px by main.js (computeImageTransform) so the crop
-   math and the overlay/tap-zone placement all share one source of truth. */
-.view-bg,
+   math and the overlay/tap-zone placement all share one source of truth.
+   view-line and view-flower share the same 1080x1920 canvas as the overlay
+   coordinates, so they get the identical transform. */
+.view-line,
+.view-flower,
 .view-overlay {
   position: absolute;
   display: block;
 }
 
-.view-bg {
+/* Simple brightness pulse instead of a directional moving sheen — two prior
+   attempts (a swept linear-gradient, then converging repeating-radial-gradient
+   rings) both fought the artwork's own 4-way streak geometry (wrong sweep
+   angle, or read as a radar ping). Pulsing brightness has no direction to get
+   wrong, so it always reads as "alive" regardless of the streak layout. Not
+   locked to the flower's 5s breathing cycle on purpose — the two subtly
+   overlapping instead of ticking in lockstep reads less mechanical. */
+.view-line {
   z-index: 1;
+  animation: line-pulse 4.5s ease-in-out infinite;
+}
+
+@keyframes line-pulse {
+  0%,
+  100% {
+    filter: brightness(0.9);
+  }
+  50% {
+    filter: brightness(1.15);
+  }
+}
+
+/* Canvas is positioned/sized in JS (main.js placeCanvasLayer), matching the
+   line/flower layers exactly. mix-blend-mode: screen composites its drawn
+   streaks onto the DOM layers beneath (the flow-line artwork) as added
+   light, matching the ctx.globalCompositeOperation = 'lighter' used inside
+   the canvas itself for particle-on-particle overlap. */
+.view-particles {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* transform-origin is the flower silhouette's own center, measured from its
+   alpha channel (bounding box 591x604+239+853 on the 1080x1920 canvas) —
+   not the canvas center, since the flower sits left-of-center. Scale never
+   dips below 1.03 so the animated flower always fully covers the static
+   glow/silhouette baked into the line layer beneath it (no gap at the
+   edges). ease-in-out per half-cycle gives the pause-at-the-extremes feel
+   of a breath in/out instead of a mechanical bounce.
+   drop-shadow (not box-shadow) hugs the flower's actual alpha silhouette
+   instead of its rectangular image box; five layered radii, near-opaque at
+   the innermost and fading out, read as one thick solid-white band (matches
+   the reference view1.png glow) instead of a thin single-line outline.
+   Both properties live in the same keyframes so the glow brightens/widens
+   exactly in sync with the breathing scale. */
+.view-flower {
+  z-index: 2;
+  transform-origin: 49.49% 60.16%;
+  animation: flower-breathe 5s ease-in-out infinite;
+}
+
+@keyframes flower-breathe {
+  0%,
+  100% {
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 6px rgba(255, 255, 255, 0.75))
+      drop-shadow(0 0 12px rgba(255, 255, 255, 0.6)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.4))
+      drop-shadow(0 0 30px rgba(255, 255, 255, 0.25));
+  }
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 8px rgba(255, 255, 255, 0.85))
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 26px rgba(255, 255, 255, 0.5))
+      drop-shadow(0 0 38px rgba(255, 255, 255, 0.35));
+  }
 }
 
 .view-overlay {
-  z-index: 2;
+  z-index: 3;
   pointer-events: none;
 }
