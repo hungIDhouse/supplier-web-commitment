@@ -177,14 +177,21 @@ function isInTapZone(clientX, clientY) {
 // Motion must run CONTINUOUSLY through the cross-fade (design review flagged
 // any freeze as a visible stutter), so view-1's fibers keep being drawn
 // while it fades out — its canvas stays live until the fade has fully ended.
-const CROSS_FADE_MS = 700; // .view opacity transition (600ms) + margin
+// The only thing paused for the window is the line-pulse brightness loop
+// (see #app.is-swapping in style.css).
+const CROSS_FADE_MS = 450; // .view opacity transition (400ms) + margin
+const app = document.querySelector('#app');
 let view1DrawUntil = 0; // timestamp; after the swap, view-1 draws while now < this
 
 function goToView2() {
   view2.classList.add('is-arriving'); // flower settle + text ease-in (style.css)
   view1DrawUntil = performance.now() + CROSS_FADE_MS;
+  app.classList.add('is-swapping');
   view1.classList.remove('is-active');
   view2.classList.add('is-active');
+  setTimeout(() => {
+    app.classList.remove('is-swapping');
+  }, CROSS_FADE_MS);
 }
 
 // Tap stays locked until the entrance sequence has mostly played out, and

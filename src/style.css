@@ -30,13 +30,17 @@ body {
 
 /* ---- View stack: full-screen, cross-faded ---- */
 
+/* 0.4s fade: short enough that the whole overlap window — the most
+   expensive compositing stretch, both stacks animating at once — sits under
+   the burst's cover (peak brightness ~0.28-0.4s after tap), so dropped
+   frames there can't read as view-1 "flashing away". */
 .view {
   position: absolute;
   inset: 0;
   background: var(--letterbox-bg);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.4s ease;
   will-change: opacity;
 }
 
@@ -66,6 +70,18 @@ body {
 .view.is-warm:not(.is-active) .view-line,
 .view.is-warm:not(.is-active) .view-flower,
 .view.is-warm:not(.is-active) .view-flower-glow {
+  animation-play-state: paused;
+}
+
+/* During the cross-fade (main.js toggles this on #app), pause ONLY the
+   line-pulse brightness loop on both views: an animated filter on a
+   full-screen image inside an opacity-animating group re-renders the whole
+   group texture every frame — the single most expensive per-frame item in
+   the overlap window. Freezing a slow 4.5s brightness drift for 0.45s is
+   imperceptible; the visible motion (fibers, breathing, settle, text) keeps
+   playing, so this doesn't reintroduce the frozen-scene stutter design
+   review flagged. */
+#app.is-swapping .view-line {
   animation-play-state: paused;
 }
 
@@ -156,6 +172,9 @@ body {
 .view-flower-wrap {
   z-index: 2;
   transform-origin: 49.49% 60.16%;
+  /* stays layer-promoted so the tap pulse / settle animations start without
+     a promotion-raster hiccup at the tap instant */
+  will-change: transform;
 }
 
 .view-flower,
@@ -311,22 +330,13 @@ body {
    animation slot (its keyframes re-assert opacity: 1 since the base state
    is hidden). */
 
-/* Pulse and glow-flash last exactly as long as the pre-swap delay (250ms in
-   main.js), so by the time the cross-fade starts, NOTHING inside view-1 is
-   still animating — the fading group's texture stays cached for the whole
-   fade instead of re-rendering every frame. */
+/* Tap feedback = wrapper pulse + the app-level burst, and nothing else on
+   purpose. An earlier version also swapped the glow layer's animation for a
+   "flash" at this instant — replacing the animation on a filtered element
+   right at tap time caused a re-raster spike that read as the tap itself
+   stuttering. The burst IS the flash now; the glow just keeps breathing. */
 #view-1.is-committing .view-flower-wrap {
   animation: flower-pulse 0.25s ease-out both;
-}
-
-/* The "flash brighter" half of the tap feedback lives on the glow layer's
-   opacity (compositor-only), NOT on an animated brightness() filter on the
-   wrapper — filtering the wrapper re-rastered its whole subtree (including
-   the 5-shadow glow child) every frame and made the tap itself stutter.
-   Scale is fixed at the breath midpoint: the glow stops scale-breathing for
-   this moment, which the burst covers anyway. */
-#view-1.is-committing .view-flower-glow {
-  animation: glow-flash 0.25s ease-out both;
 }
 
 @keyframes flower-pulse {
@@ -341,18 +351,6 @@ body {
   100% {
     opacity: 1;
     transform: scale(1.08);
-  }
-}
-
-@keyframes glow-flash {
-  0% {
-    opacity: 0.75;
-    transform: scale(1.05);
-  }
-  60%,
-  100% {
-    opacity: 1;
-    transform: scale(1.05);
   }
 }
 
