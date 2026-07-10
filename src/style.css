@@ -122,26 +122,48 @@ body {
    drop-shadow (not box-shadow) hugs the flower's actual alpha silhouette
    instead of its rectangular image box; five layered radii, near-opaque at
    the innermost and fading out, read as one thick solid-white band (matches
-   the reference view1.png glow) instead of a thin single-line outline.
-   Both properties live in the same keyframes so the glow brightens/widens
-   exactly in sync with the breathing scale. */
+   the reference view1.png glow) instead of a thin single-line outline. */
 /* Wrapper (JS-positioned to the artwork box) owns the one-shot transforms —
-   entrance pop, tap pulse, view-2 settle — while the img inside owns the
+   entrance pop, tap pulse, view-2 settle — while the imgs inside own the
    infinite breathing loop. Same property (transform) can't run two
-   animations on one element, so they're split across the two. Both share
+   animations on one element, so they're split across the two. All share
    the flower-center transform-origin. */
 .view-flower-wrap {
   z-index: 2;
   transform-origin: 49.49% 60.16%;
 }
 
-.view-flower {
+.view-flower,
+.view-flower-glow {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   transform-origin: 49.49% 60.16%;
   animation: flower-breathe 5s ease-in-out infinite;
+}
+
+/* The glow layer: a second copy of the flower sitting under the crisp one,
+   carrying the full 5-shadow chain as a STATIC filter so the GPU rasterizes
+   it once. It scale-breathes in lockstep with the crisp copy (same
+   flower-breathe, so the crisp img always covers it exactly) and breathes
+   its intensity via opacity — compositor-only work — instead of the old
+   animated-filter approach that re-rastered every frame and lagged phones. */
+.view-flower-glow {
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 8px rgba(255, 255, 255, 0.85))
+    drop-shadow(0 0 16px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 26px rgba(255, 255, 255, 0.5))
+    drop-shadow(0 0 38px rgba(255, 255, 255, 0.35));
+  animation: flower-breathe 5s ease-in-out infinite, glow-breathe 5s ease-in-out infinite;
+}
+
+@keyframes glow-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* White flash that expands from the flower on tap, covering the cross-fade
@@ -164,19 +186,16 @@ body {
   pointer-events: none;
 }
 
+/* Transform-only on purpose: the glow intensity now breathes on the glow
+   layer's opacity (see .view-flower-glow) — animating the filter here is
+   what forced per-frame re-rasterization and lagged mobile. */
 @keyframes flower-breathe {
   0%,
   100% {
     transform: scale(1.03);
-    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 6px rgba(255, 255, 255, 0.75))
-      drop-shadow(0 0 12px rgba(255, 255, 255, 0.6)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.4))
-      drop-shadow(0 0 30px rgba(255, 255, 255, 0.25));
   }
   50% {
     transform: scale(1.08);
-    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 8px rgba(255, 255, 255, 0.85))
-      drop-shadow(0 0 16px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 26px rgba(255, 255, 255, 0.5))
-      drop-shadow(0 0 38px rgba(255, 255, 255, 0.35));
   }
 }
 

@@ -21,6 +21,11 @@
                keeps its own breathing animation — same property (transform)
                can't run two animations on one element. -->
           <div class="view-flower-wrap">
+            <!-- Glow lives on its own copy of the image with a STATIC filter
+                 chain (rasterized once); only its opacity breathes. Animating
+                 the drop-shadow chain itself forced a GPU re-raster of 5
+                 shadows every frame — the main mobile lag source. -->
+            <img class="view-flower-glow" src="/asset/hoabeerview1.webp" alt="" aria-hidden="true" />
             <img class="view-flower" src="/asset/hoabeerview1.webp" alt="" />
             <div class="view-burst" aria-hidden="true"></div>
           </div>
@@ -34,6 +39,7 @@
           <img class="view-line" src="/asset/liquid_lineview2.webp" alt="" />
           <canvas class="view-particles" aria-hidden="true"></canvas>
           <div class="view-flower-wrap">
+            <img class="view-flower-glow" src="/asset/hoabiaview2.webp" alt="" aria-hidden="true" />
             <img class="view-flower" src="/asset/hoabiaview2.webp" alt="" />
           </div>
           <img class="view-overlay" src="/asset/view2text.png" alt="" />

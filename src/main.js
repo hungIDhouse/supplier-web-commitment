@@ -120,7 +120,10 @@ function placeCanvasLayer(canvas, offsetX, offsetY, scale) {
   canvas.style.width = `${cssW}px`;
   canvas.style.height = `${cssH}px`;
 
-  const dpr = window.devicePixelRatio || 1;
+  // DPR capped at 2: on 3x phones this cuts canvas fill work ~2.25x, and
+  // the content is all soft translucent glow — the resolution loss isn't
+  // visually detectable there, unlike with sharp-edged graphics.
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const pixelW = Math.max(1, Math.round(cssW * dpr));
   const pixelH = Math.max(1, Math.round(cssH * dpr));
   if (canvas.width !== pixelW || canvas.height !== pixelH) {
@@ -335,16 +338,42 @@ function randomizeRunner(runner) {
   return runner;
 }
 
+// Sparkle sprite per flow color, rendered once at startup: white-hot core,
+// tinted halo. drawImage of a cached sprite replaces the per-dot-per-frame
+// createRadialGradient + arc + fill the dots used before — same pixels
+// (identical gradient stops; per-frame twinkle stays on globalAlpha), a
+// fraction of the cost.
+function makeDotSprite([r, g, b]) {
+  const size = 64;
+  const sprite = document.createElement('canvas');
+  sprite.width = size;
+  sprite.height = size;
+  const sctx = sprite.getContext('2d');
+  const grad = sctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+  grad.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.55)`);
+  grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+  sctx.fillStyle = grad;
+  sctx.fillRect(0, 0, size, size);
+  return sprite;
+}
+
+const FLOW_SPRITES = FLOW_COLORS.map(makeDotSprite);
+
 function createParticleSystem(canvas) {
   const ctx = canvas.getContext('2d');
-  const flows = FLOW_PATHS.map((path, i) => ({
-    path,
-    stroke: `rgb(${FLOW_COLORS[i][0]}, ${FLOW_COLORS[i][1]}, ${FLOW_COLORS[i][2]})`,
-    rgb: FLOW_COLORS[i],
-    runners: Array.from({ length: LANES_PER_FLOW }, () =>
-      randomizeRunner({ p: Math.random() * 1.5 })
-    ),
-  }));
+  const flows = FLOW_PATHS.map((path, i) => {
+    const [r, g, b] = FLOW_COLORS[i];
+    return {
+      path,
+      solid: `rgb(${r}, ${g}, ${b})`,
+      transparent: `rgba(${r}, ${g}, ${b}, 0)`,
+      sprite: FLOW_SPRITES[i],
+      runners: Array.from({ length: LANES_PER_FLOW }, () =>
+        randomizeRunner({ p: Math.random() * 1.5 })
+      ),
+    };
+  });
   return { canvas, ctx, flows };
 }
 
@@ -363,7 +392,7 @@ function updateAndDrawSystem(system, dt, elapsed) {
   const baseWidth = Math.min(Math.max(cssW * 0.004, 1), 2.4);
   const dotBase = Math.min(Math.max(cssW * 0.004, 1.2), 2.6);
 
-  for (const { path, runners, stroke, rgb } of flows) {
+  for (const { path, runners, solid, transparent, sprite } of flows) {
     for (const runner of runners) {
       runner.p += runner.speed * dt;
       const cycle = 1 + runner.gap;
@@ -377,30 +406,39 @@ function updateAndDrawSystem(system, dt, elapsed) {
       const tailP = headP - runner.len;
       const offsetPx = runner.offset * cssW;
 
-      // --- fiber: a curved polyline faded to nothing at both ends ---
-      ctx.lineWidth = baseWidth * runner.width;
-      let prev = null;
-      for (let s = 0; s <= FIBER_SAMPLES; s++) {
-        const ft = s / FIBER_SAMPLES; // 0 at tail .. 1 at head
-        const t = tailP + (headP - tailP) * ft;
-        const pt = offsetPointPx(path, t, offsetPx, cssW, cssH);
-        if (prev) {
-          const midFt = ft - 0.5 / FIBER_SAMPLES;
-          const edgeFade = Math.sin(midFt * Math.PI); // 0 at both ends, 1 mid
-          const visible = t > 0 && t <= 1 ? 1 : 0;
-          ctx.globalAlpha = runner.alpha * edgeFade * visible;
-          if (ctx.globalAlpha > 0.001) {
-            ctx.strokeStyle = stroke;
-            ctx.beginPath();
-            ctx.moveTo(prev.x, prev.y);
-            ctx.lineTo(pt.x, pt.y);
-            ctx.stroke();
-          }
-        }
-        prev = pt;
-      }
+      // --- fiber: ONE stroke along the visible stretch, faded to nothing at
+      // both ends by a linear gradient over its endpoints (straight gradient
+      // axis is a fine approximation for these gentle curves). One gradient
+      // + one stroke per fiber, versus the 10 alpha-stepped segment strokes
+      // this replaced — and the continuous fade looks smoother, too. ---
+      const t0 = Math.max(tailP, 0);
+      const t1 = Math.min(headP, 1);
+      if (t1 - t0 < 0.01) continue;
 
-      // --- sparkle dots riding the fiber ---
+      let first = null;
+      let last = null;
+      ctx.beginPath();
+      for (let s = 0; s <= FIBER_SAMPLES; s++) {
+        const t = t0 + (t1 - t0) * (s / FIBER_SAMPLES);
+        const pt = offsetPointPx(path, t, offsetPx, cssW, cssH);
+        if (s === 0) {
+          ctx.moveTo(pt.x, pt.y);
+          first = pt;
+        } else {
+          ctx.lineTo(pt.x, pt.y);
+        }
+        last = pt;
+      }
+      const fade = ctx.createLinearGradient(first.x, first.y, last.x, last.y);
+      fade.addColorStop(0, transparent);
+      fade.addColorStop(0.5, solid);
+      fade.addColorStop(1, transparent);
+      ctx.globalAlpha = runner.alpha;
+      ctx.strokeStyle = fade;
+      ctx.lineWidth = baseWidth * runner.width;
+      ctx.stroke();
+
+      // --- sparkle dots riding the fiber (cached sprite, alpha twinkle) ---
       for (const dot of runner.dots) {
         const t = tailP + (headP - tailP) * dot.rel;
         if (t <= 0 || t > 1) continue;
@@ -409,17 +447,9 @@ function updateAndDrawSystem(system, dt, elapsed) {
         const along = Math.sin(dot.rel * Math.PI); // dimmer near the fiber ends
         const a = Math.min(1, runner.alpha * 3.2 * twinkle * along);
         if (a <= 0.02) continue;
-        const core = dotBase * dot.r;
-        // white-hot core, halo tinted with the flow's own color
-        const glow = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, core * 3);
-        glow.addColorStop(0, `rgba(255, 255, 255, ${a})`);
-        glow.addColorStop(0.35, `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${a * 0.55})`);
-        glow.addColorStop(1, `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0)`);
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, core * 3, 0, Math.PI * 2);
-        ctx.fill();
+        const radius = dotBase * dot.r * 3;
+        ctx.globalAlpha = a;
+        ctx.drawImage(sprite, pt.x - radius, pt.y - radius, radius * 2, radius * 2);
       }
     }
   }
