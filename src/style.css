@@ -56,10 +56,18 @@ body {
 
 /* An invisible warmed view shouldn't burn per-frame animation/filter work:
    keep its loops paused until it actually shows. (Also freezes view-1's
-   loops while it fades out after the swap — imperceptible during 0.6s.) */
+   loops while it fades out after the swap — imperceptible during 0.6s.)
+   .is-fading extends the same freeze through the cross-fade itself (main.js
+   removes it right after): the incoming view's loops — notably line-pulse,
+   an animated filter on a full-screen image — resume only once the fade,
+   the heaviest compositing window, is over. The flower-settle/text one-shots
+   on other elements still play during the fade, so the arrival isn't static. */
 .view:not(.is-active) .view-line,
 .view:not(.is-active) .view-flower,
-.view:not(.is-active) .view-flower-glow {
+.view:not(.is-active) .view-flower-glow,
+.view.is-fading .view-line,
+.view.is-fading .view-flower,
+.view.is-fading .view-flower-glow {
   animation-play-state: paused;
 }
 
@@ -129,6 +137,13 @@ body {
   display: block;
   pointer-events: none;
   mix-blend-mode: screen;
+  /* softens the fibers' appearance when a view's canvas starts drawing
+     after the cross-fade (see .is-fading) instead of popping in */
+  transition: opacity 0.5s ease;
+}
+
+.view.is-fading .view-particles {
+  opacity: 0;
 }
 
 /* transform-origin is the flower silhouette's own center, measured from its
