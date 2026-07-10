@@ -56,20 +56,16 @@ body {
   opacity: 0.02;
 }
 
-/* An invisible warmed view shouldn't burn per-frame animation/filter work:
-   keep its loops paused until it actually shows. (Also freezes view-1's
-   loops while it fades out after the swap — imperceptible during 0.6s.)
-   .is-fading extends the same freeze through the cross-fade itself (main.js
-   removes it right after): the incoming view's loops — notably line-pulse,
-   an animated filter on a full-screen image — resume only once the fade,
-   the heaviest compositing window, is over. The flower-settle/text one-shots
-   on other elements still play during the fade, so the arrival isn't static. */
-.view:not(.is-active) .view-line,
-.view:not(.is-active) .view-flower,
-.view:not(.is-active) .view-flower-glow,
-.view.is-fading .view-line,
-.view.is-fading .view-flower,
-.view.is-fading .view-flower-glow {
+/* Only the pre-warmed, still-hidden view has its loops paused (no point
+   burning per-frame work on an invisible layer). From the swap onward BOTH
+   views keep animating straight through the cross-fade: an earlier version
+   froze them during the fade to save compositing, and design review flagged
+   exactly that freeze as a visible stutter. With view-2's images pre-decoded
+   and pre-rasterized (.is-warm + decode() in main.js), live motion through
+   the fade is affordable. */
+.view.is-warm:not(.is-active) .view-line,
+.view.is-warm:not(.is-active) .view-flower,
+.view.is-warm:not(.is-active) .view-flower-glow {
   animation-play-state: paused;
 }
 
@@ -139,13 +135,6 @@ body {
   display: block;
   pointer-events: none;
   mix-blend-mode: screen;
-  /* softens the fibers' appearance when a view's canvas starts drawing
-     after the cross-fade (see .is-fading) instead of popping in */
-  transition: opacity 0.5s ease;
-}
-
-.view.is-fading .view-particles {
-  opacity: 0;
 }
 
 /* transform-origin is the flower silhouette's own center, measured from its
@@ -382,19 +371,17 @@ body {
 }
 
 /* ---- View 2 arrival ----
-   Both one-shots are delayed past the 0.6s cross-fade on purpose: while the
-   fade runs, view-2's subtree is completely static, so its group texture is
-   rendered once and the fade is a pure two-texture blend. Then the arrival
-   plays as its own beat: flower settles from slightly oversized (as if just
-   poured full), closing text fades in last, and the flow loops/particles
-   resume at the same moment (is-fading comes off at +700ms in main.js). */
+   Runs DURING the cross-fade so the scene arrives already alive: the filled
+   flower settles from slightly oversized (as if just poured full) while the
+   views blend, and the closing text eases in right behind it — a long
+   ease-out curve rather than a pop, per design review. */
 
 #view-2.is-arriving .view-flower-wrap {
-  animation: flower-settle 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.7s both;
+  animation: flower-settle 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
 }
 
 #view-2.is-arriving .view-overlay {
-  animation: enter-overlay 0.6s ease 0.85s both;
+  animation: enter-overlay 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
 }
 
 @keyframes flower-settle {

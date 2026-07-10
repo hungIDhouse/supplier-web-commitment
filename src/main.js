@@ -174,24 +174,17 @@ function isInTapZone(clientX, clientY) {
   return clientX >= left && clientX <= right && clientY >= top && clientY <= bottom;
 }
 
-// The 0.6s cross-fade is the heaviest compositing window: both full-screen
-// stacks blend at once. Everything view-2 runs per-frame (particle drawing,
-// its looping animations — see .is-fading in style.css) stays off until the
-// fade has finished, so the fade itself only pays for two static stacks plus
-// the cheap transform/opacity one-shots.
+// Motion must run CONTINUOUSLY through the cross-fade (design review flagged
+// any freeze as a visible stutter), so view-1's fibers keep being drawn
+// while it fades out — its canvas stays live until the fade has fully ended.
 const CROSS_FADE_MS = 700; // .view opacity transition (600ms) + margin
-let crossFading = false;
+let view1DrawUntil = 0; // timestamp; after the swap, view-1 draws while now < this
 
 function goToView2() {
-  view2.classList.add('is-arriving'); // flower settle + delayed text (style.css)
-  view2.classList.add('is-fading');
-  crossFading = true;
+  view2.classList.add('is-arriving'); // flower settle + text ease-in (style.css)
+  view1DrawUntil = performance.now() + CROSS_FADE_MS;
   view1.classList.remove('is-active');
   view2.classList.add('is-active');
-  setTimeout(() => {
-    view2.classList.remove('is-fading');
-    crossFading = false;
-  }, CROSS_FADE_MS);
 }
 
 // Tap stays locked until the entrance sequence has mostly played out, and
@@ -510,13 +503,13 @@ function particleFrame(now) {
   lastFrameTime = now;
   particlesElapsed += dt;
 
-  // Only the visible view is drawn — the other is opacity:0, so painting its
-  // canvas each frame would be wasted work. Runners still advance on the
-  // active one; the inactive one simply isn't rendered until it's shown.
-  // View 2 also skips drawing while the cross-fade is in flight (its canvas
-  // starts empty and the fibers fade in with their own alpha right after).
-  if (view1.classList.contains('is-active')) updateAndDrawSystem(particleSystem1, dt, particlesElapsed);
-  if (view2.classList.contains('is-active') && !crossFading) updateAndDrawSystem(particleSystem2, dt, particlesElapsed);
+  // Draw only what's visible: view-1 while it's active AND through the
+  // cross-fade window after the swap (so its fibers keep flowing as it fades
+  // out — no freeze); view-2 from the moment it becomes active.
+  if (view1.classList.contains('is-active') || now < view1DrawUntil) {
+    updateAndDrawSystem(particleSystem1, dt, particlesElapsed);
+  }
+  if (view2.classList.contains('is-active')) updateAndDrawSystem(particleSystem2, dt, particlesElapsed);
 
   particlesRafId = requestAnimationFrame(particleFrame);
 }
