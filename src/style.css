@@ -68,10 +68,10 @@ body {
 
 /* Position/size set in px by main.js (computeImageTransform) so the crop
    math and the overlay/tap-zone placement all share one source of truth.
-   view-line and view-flower share the same 1080x1920 canvas as the overlay
-   coordinates, so they get the identical transform. */
+   view-line and view-flower-wrap share the same 1080x1920 canvas as the
+   overlay coordinates, so they get the identical transform. */
 .view-line,
-.view-flower,
+.view-flower-wrap,
 .view-overlay {
   position: absolute;
   display: block;
@@ -125,10 +125,43 @@ body {
    the reference view1.png glow) instead of a thin single-line outline.
    Both properties live in the same keyframes so the glow brightens/widens
    exactly in sync with the breathing scale. */
-.view-flower {
+/* Wrapper (JS-positioned to the artwork box) owns the one-shot transforms —
+   entrance pop, tap pulse, view-2 settle — while the img inside owns the
+   infinite breathing loop. Same property (transform) can't run two
+   animations on one element, so they're split across the two. Both share
+   the flower-center transform-origin. */
+.view-flower-wrap {
   z-index: 2;
   transform-origin: 49.49% 60.16%;
+}
+
+.view-flower {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 49.49% 60.16%;
   animation: flower-breathe 5s ease-in-out infinite;
+}
+
+/* White flash that expands from the flower on tap, covering the cross-fade
+   moment. Sized/centered on the flower within the wrapper's artwork box. */
+.view-burst {
+  position: absolute;
+  left: 49.49%;
+  top: 60.16%;
+  width: 55%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0.3);
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.5) 45%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  opacity: 0;
+  pointer-events: none;
 }
 
 @keyframes flower-breathe {
@@ -150,4 +183,143 @@ body {
 .view-overlay {
   z-index: 3;
   pointer-events: none;
+}
+
+/* ---- View 1 entrance ----
+   Layers start hidden; main.js adds .is-enter once view-1's images have
+   decoded (with a timeout fallback), then the layers come in as a story
+   beat: sky → flows+particles → flower pop → title. Every animation uses
+   fill "both" so the pre-delay state matches the hidden base state. */
+
+#view-1 .view-sky,
+#view-1 .view-line,
+#view-1 .view-particles,
+#view-1 .view-flower-wrap,
+#view-1 .view-overlay {
+  opacity: 0;
+}
+
+#view-1.is-enter .view-sky {
+  animation: enter-fade 0.3s ease both;
+}
+
+/* line-pulse must be re-declared here: this rule's animation shorthand
+   replaces the base .view-line one. */
+#view-1.is-enter .view-line {
+  animation: enter-fade 0.7s ease 0.2s both, line-pulse 4.5s ease-in-out infinite;
+}
+
+#view-1.is-enter .view-particles {
+  animation: enter-fade 0.7s ease 0.2s both;
+}
+
+#view-1.is-enter .view-flower-wrap {
+  /* back-out ease: slight overshoot, like the flows just filled it up */
+  animation: enter-flower 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s both;
+}
+
+#view-1.is-enter .view-overlay {
+  animation: enter-overlay 0.6s ease 1.2s both;
+}
+
+@keyframes enter-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes enter-flower {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes enter-overlay {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- Tap commit: view 1 -> view 2 ----
+   .is-committing lands on #view-1 the instant a valid tap is registered:
+   the flower pulses bright immediately (instant touch feedback), a white
+   burst blooms over it, and main.js starts the cross-fade 250ms in, under
+   the burst. These rules sit after the .is-enter ones on purpose — equal
+   specificity, so source order lets the pulse take over the wrapper's
+   animation slot (its keyframes re-assert opacity: 1 since the base state
+   is hidden). */
+
+#view-1.is-committing .view-flower-wrap {
+  animation: flower-pulse 0.45s ease-out both;
+}
+
+#view-1.is-committing .view-burst {
+  animation: burst-out 0.65s ease-out 0.08s both;
+}
+
+@keyframes flower-pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.13);
+    filter: brightness(1.4);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.07);
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes burst-out {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  30% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.4);
+  }
+}
+
+/* ---- View 2 arrival ----
+   Added together with the cross-fade: the filled flower settles from
+   slightly oversized (as if just poured full), then the closing text
+   fades in last. */
+
+#view-2.is-arriving .view-flower-wrap {
+  animation: flower-settle 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+#view-2.is-arriving .view-overlay {
+  animation: enter-overlay 0.6s ease 0.35s both;
+}
+
+@keyframes flower-settle {
+  from {
+    transform: scale(1.07);
+  }
+  to {
+    transform: scale(1);
+  }
 }

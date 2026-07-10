@@ -17,7 +17,13 @@
           <!-- Short glowing streaks travel inward along the 4 flow curves;
                sized/positioned by main.js to match the line/flower layers. -->
           <canvas class="view-particles" aria-hidden="true"></canvas>
-          <img class="view-flower" src="/asset/hoabeerview1.webp" alt="" />
+          <!-- Wrapper carries the entrance/tap-pulse transforms; the img
+               keeps its own breathing animation — same property (transform)
+               can't run two animations on one element. -->
+          <div class="view-flower-wrap">
+            <img class="view-flower" src="/asset/hoabeerview1.webp" alt="" />
+            <div class="view-burst" aria-hidden="true"></div>
+          </div>
           <img class="view-overlay" src="/asset/view1text_icon.png" alt="" />
         </div>
       </section>
@@ -27,7 +33,9 @@
           <img class="view-sky" src="/asset/backgroundsky.webp" alt="" />
           <img class="view-line" src="/asset/liquid_lineview2.webp" alt="" />
           <canvas class="view-particles" aria-hidden="true"></canvas>
-          <img class="view-flower" src="/asset/hoabiaview2.webp" alt="" />
+          <div class="view-flower-wrap">
+            <img class="view-flower" src="/asset/hoabiaview2.webp" alt="" />
+          </div>
           <img class="view-overlay" src="/asset/view2text.png" alt="" />
         </div>
       </section>

@@ -8,8 +8,8 @@ const view1Line = view1.querySelector('.view-line');
 const view2Line = view2.querySelector('.view-line');
 const view1Particles = view1.querySelector('.view-particles');
 const view2Particles = view2.querySelector('.view-particles');
-const view1Flower = view1.querySelector('.view-flower');
-const view2Flower = view2.querySelector('.view-flower');
+const view1FlowerWrap = view1.querySelector('.view-flower-wrap');
+const view2FlowerWrap = view2.querySelector('.view-flower-wrap');
 const view1Overlay = view1.querySelector('.view-overlay');
 const view2Overlay = view2.querySelector('.view-overlay');
 
@@ -135,10 +135,10 @@ function placeCanvasLayer(canvas, offsetX, offsetY, scale) {
 let view1Transform = { scale: 1, offsetX: 0, offsetY: 0 };
 
 function render() {
-  view1Transform = applyTransform(view1Frame, [view1Line, view1Flower], view1Overlay, OVERLAY_NATIVE.view1);
+  view1Transform = applyTransform(view1Frame, [view1Line, view1FlowerWrap], view1Overlay, OVERLAY_NATIVE.view1);
   placeCanvasLayer(view1Particles, view1Transform.offsetX, view1Transform.offsetY, view1Transform.scale);
 
-  const view2Transform = applyTransform(view2Frame, [view2Line, view2Flower], view2Overlay, OVERLAY_NATIVE.view2);
+  const view2Transform = applyTransform(view2Frame, [view2Line, view2FlowerWrap], view2Overlay, OVERLAY_NATIVE.view2);
   placeCanvasLayer(view2Particles, view2Transform.offsetX, view2Transform.offsetY, view2Transform.scale);
 }
 
@@ -156,14 +156,46 @@ function isInTapZone(clientX, clientY) {
 }
 
 function goToView2() {
+  view2.classList.add('is-arriving'); // flower settle + delayed text (style.css)
   view1.classList.remove('is-active');
   view2.classList.add('is-active');
 }
 
+// Tap stays locked until the entrance sequence has mostly played out, and
+// the commit runs once — a second tap during the transition does nothing.
+let tapEnabled = false;
+let transitioning = false;
+
+// Instant feedback on the flower (pulse + burst via .is-committing), then
+// start the cross-fade under the burst while it's still covering the swap.
+const COMMIT_SWAP_DELAY_MS = 250;
+
 view1.addEventListener('click', (event) => {
-  if (isInTapZone(event.clientX, event.clientY)) {
-    goToView2();
-  }
+  if (!tapEnabled || transitioning) return;
+  if (!isInTapZone(event.clientX, event.clientY)) return;
+  transitioning = true;
+  view1.classList.add('is-committing');
+  setTimeout(goToView2, COMMIT_SWAP_DELAY_MS);
+});
+
+// ---- View 1 entrance ----
+// Start the entrance only after view-1's images have actually decoded, so
+// the sequence never plays over empty frames on a slow connection; the
+// race's timeout keeps a broken/hung image from blanking the page forever.
+// Tap unlocks shortly before the title finishes fading in.
+const ENTRANCE_TAP_UNLOCK_MS = 1400;
+const ENTRANCE_DECODE_TIMEOUT_MS = 2500;
+
+const entranceImages = [view1.querySelector('.view-sky'), view1Line, view1.querySelector('.view-flower'), view1Overlay];
+
+Promise.race([
+  Promise.all(entranceImages.map((img) => (img.decode ? img.decode().catch(() => {}) : Promise.resolve()))),
+  new Promise((resolve) => setTimeout(resolve, ENTRANCE_DECODE_TIMEOUT_MS)),
+]).then(() => {
+  view1.classList.add('is-enter');
+  setTimeout(() => {
+    tapEnabled = true;
+  }, ENTRANCE_TAP_UNLOCK_MS);
 });
 
 // ---- Flow particles: thin glowing fibers (with sparkle dots) travelling
@@ -185,32 +217,67 @@ const FLOW_PATHS = [
     [0, 33.7], [4, 35.2], [8, 36.1], [12, 37.4], [16, 39.2], [20, 41.0], [24, 42.9],
     [28, 45.1], [32, 47.2], [36, 49.0], [40, 50.5], [44, 50.5], [48, 51.0],
   ],
-  // blue — left edge (bottom) into the bottom-left flower lobe
+  // blue — bottom edge into the bottom-left flower lobe. Hand-authored
+  // S-curve (per design direction, ref public/asset/ref/avdly4wko.webp):
+  // exact horizontal mirror of the orange path below, with the final point
+  // pinned to the flower's measured center (49.49, 60.16) — a true mirror
+  // endpoint would be (50.51, 60.16), a 0.5% nudge that's invisible but
+  // keeps both bottom flows converging on the same spot as the breathing
+  // origin. Verified against the artwork: 100% of its flower-visible length
+  // lies on the blue streak bundle (text holes closed).
   [
-    [0, 83.8], [4, 83.6], [8, 83.3], [12, 82.5], [16, 81.6], [20, 80.5], [24, 78.1],
-    [28, 75.8], [32, 73.0], [36, 67.9], [40, 65.1], [44, 65.3], [48, 65.8],
+    [3, 95], [10.5, 88.5], [16, 81.5], [19.5, 74.5], [21.5, 70], [25.5, 65.5],
+    [30, 62], [33, 60.5], [49.49, 60.16],
   ],
   // yellow — right edge (top) into the top-right flower lobe
   [
     [100, 33.4], [96, 36.0], [92, 38.6], [88, 40.3], [84, 41.7], [80, 43.6], [76, 44.7],
     [72, 49.0], [68, 52.6], [64, 53.3], [60, 53.4], [56, 53.0], [52, 53.2],
   ],
-  // orange — right edge (bottom) into the bottom-right flower lobe
+  // orange — bottom-right corner into the bottom-right flower lobe. Traced
+  // from the design's GREEN guide curve in public/asset/ref/feedback2.png
+  // (image px converted to canvas %), then softened twice per follow-up
+  // feedback: interior points pulled toward the straight entry->notch chord
+  // (~45% overall), with the notch-approach segment (y <= 70) damped hardest
+  // (factor ~0.4-0.55) so the run into the flower's lower-right notch is
+  // near-straight; the S's two opposing leans survive only as a gentle wave
+  // around the chord. The final sweep to the center runs hidden under the
+  // flower layer. Control points sit inside the measured corridor (on the
+  // orange streak texture AND not covered by the flower alpha): 100% of the
+  // path's visible length lies on the streak bundle.
   [
-    [100, 86.4], [96, 84.7], [92, 83.6], [88, 81.0], [84, 77.5], [80, 73.7], [76, 71.5],
-    [72, 65.4], [68, 59.6], [64, 57.3], [60, 56.9], [56, 58.0], [52, 58.8],
+    [97, 95], [89.5, 88.5], [84, 81.5], [80.5, 74.5], [78.5, 70], [74.5, 65.5],
+    [70, 62], [67, 60.5], [49.49, 60.16],
   ],
+];
+
+// Per-flow light tints, same order as FLOW_PATHS (green, blue, yellow,
+// orange). Base colors were sampled from each bundle's mid-brightness pixels
+// in liquid_lineview1.webp, then lightened ~30% toward white so that, with
+// the 'lighter' composite, the fibers read as glowing light of that flow's
+// color rather than flat paint. Sparkle dots keep a white-hot core with a
+// tinted halo.
+const FLOW_COLORS = [
+  [95, 247, 128], // green  (sampled rgb(27,244,74))
+  [79, 206, 253], // blue   (sampled rgb(3,185,252))
+  [253, 233, 161], // yellow (sampled rgb(252,224,121))
+  [255, 185, 70], // orange (sampled rgb(253,202,54), kept warmer/less white)
 ];
 
 // A "runner" is one thin light fiber. Each flow spawns several of them in
 // parallel LANES (a random perpendicular offset off the measured centerline),
 // so the streaks read as a dense bundle rather than every fiber tracing the
-// exact same line. Only the active view is drawn per frame, so the budget is
-// per-view: 4 flows x 7 lanes = 28 fibers x 6 segments = 168 stroke segments
-// + 56 sparkle dots — still comfortable on mobile.
-const LANES_PER_FLOW = 7;
+// exact same line. Fibers are long (~35-60% of the path) with near-zero rest
+// between laps and staggered start phases, so at any instant every stretch
+// of the path carries light — the flow reads as one continuous pour, not
+// isolated passing streaks. Only the active view is drawn per frame, so the
+// budget is per-view: 4 flows x 10 lanes = 40 fibers x 10 segments = 400
+// stroke segments + sparkle dots — still fine on mobile (simple strokes,
+// no shadowBlur). At 14 lanes: 56 fibers x 10 segments = 560 segments + 112
+// dots per frame.
+const LANES_PER_FLOW = 14;
 const DOTS_PER_FIBER = 2;
-const FIBER_SAMPLES = 6; // polyline segments used to draw one curved fiber
+const FIBER_SAMPLES = 10; // polyline segments used to draw one curved fiber
 const LANE_HALF_WIDTH = 0.06; // max perpendicular lane offset, fraction of canvas width
 
 // Position at parameter t (0..1) along a path, linearly interpolated between
@@ -253,11 +320,11 @@ function offsetPointPx(path, t, offsetPx, cssW, cssH) {
 }
 
 function randomizeRunner(runner) {
-  runner.speed = 0.11 + Math.random() * 0.09; // full 0->1 traverse in ~5-9s
-  runner.len = 0.16 + Math.random() * 0.12; // long, soft fiber (~16-28% of path)
-  runner.gap = 0.4 + Math.random() * 0.7; // invisible rest before the next lap
+  runner.speed = 0.26 + Math.random() * 0.16; // full 0->1 traverse in ~2.4-3.8s — a hard pour
+  runner.len = 0.42 + Math.random() * 0.28; // very long fiber (~42-70% of path), unbroken stream
+  runner.gap = 0.01 + Math.random() * 0.08; // essentially back-to-back laps
   runner.offset = (Math.random() * 2 - 1) * LANE_HALF_WIDTH; // lane, fraction of width
-  runner.alpha = 0.16 + Math.random() * 0.13; // faint, semi-transparent fiber
+  runner.alpha = 0.26 + Math.random() * 0.18; // bold presence, still translucent
   runner.width = 0.85 + Math.random() * 0.7; // relative line-width jitter
   runner.dots = Array.from({ length: DOTS_PER_FIBER }, () => ({
     rel: 0.22 + Math.random() * 0.56, // position along the fiber (0 tail .. 1 head)
@@ -270,8 +337,10 @@ function randomizeRunner(runner) {
 
 function createParticleSystem(canvas) {
   const ctx = canvas.getContext('2d');
-  const flows = FLOW_PATHS.map((path) => ({
+  const flows = FLOW_PATHS.map((path, i) => ({
     path,
+    stroke: `rgb(${FLOW_COLORS[i][0]}, ${FLOW_COLORS[i][1]}, ${FLOW_COLORS[i][2]})`,
+    rgb: FLOW_COLORS[i],
     runners: Array.from({ length: LANES_PER_FLOW }, () =>
       randomizeRunner({ p: Math.random() * 1.5 })
     ),
@@ -294,7 +363,7 @@ function updateAndDrawSystem(system, dt, elapsed) {
   const baseWidth = Math.min(Math.max(cssW * 0.004, 1), 2.4);
   const dotBase = Math.min(Math.max(cssW * 0.004, 1.2), 2.6);
 
-  for (const { path, runners } of flows) {
+  for (const { path, runners, stroke, rgb } of flows) {
     for (const runner of runners) {
       runner.p += runner.speed * dt;
       const cycle = 1 + runner.gap;
@@ -321,7 +390,7 @@ function updateAndDrawSystem(system, dt, elapsed) {
           const visible = t > 0 && t <= 1 ? 1 : 0;
           ctx.globalAlpha = runner.alpha * edgeFade * visible;
           if (ctx.globalAlpha > 0.001) {
-            ctx.strokeStyle = '#ffffff';
+            ctx.strokeStyle = stroke;
             ctx.beginPath();
             ctx.moveTo(prev.x, prev.y);
             ctx.lineTo(pt.x, pt.y);
@@ -341,10 +410,11 @@ function updateAndDrawSystem(system, dt, elapsed) {
         const a = Math.min(1, runner.alpha * 3.2 * twinkle * along);
         if (a <= 0.02) continue;
         const core = dotBase * dot.r;
+        // white-hot core, halo tinted with the flow's own color
         const glow = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, core * 3);
         glow.addColorStop(0, `rgba(255, 255, 255, ${a})`);
-        glow.addColorStop(0.35, `rgba(255, 255, 255, ${a * 0.5})`);
-        glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        glow.addColorStop(0.35, `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${a * 0.55})`);
+        glow.addColorStop(1, `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0)`);
         ctx.globalAlpha = 1;
         ctx.fillStyle = glow;
         ctx.beginPath();
