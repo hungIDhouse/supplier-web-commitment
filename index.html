@@ -35,7 +35,10 @@
       <section id="view-2" class="view">
         <div class="view-frame">
           <img class="view-sky" src="/asset/backgroundsky.webp" alt="" />
-          <img class="view-line" src="/asset/liquid_lineview2.webp" alt="" />
+          <!-- Same flow-line artwork as view 1 (design decision): keeps the
+               colored streams identical across the transition, and shares
+               one decoded image between the views. -->
+          <img class="view-line" src="/asset/liquid_lineview1.webp" alt="" />
           <canvas class="view-particles" aria-hidden="true"></canvas>
           <div class="view-flower-wrap">
             <img class="view-flower-glow" src="/asset/hoabiaview2.webp" alt="" aria-hidden="true" />
