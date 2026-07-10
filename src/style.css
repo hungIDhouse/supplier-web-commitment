@@ -49,9 +49,11 @@ body {
    forces the browser to rasterize view-2's whole stack — notably the glow
    layer's 5-shadow filter — while the user is watching the entrance,
    instead of cold at tap time, where that raster spike read as a stutter.
-   It sits behind/above the fully opaque view-1 at 0.1% alpha: invisible. */
+   2% alpha (not 0.1%) on purpose: low enough to be invisible over the fully
+   opaque view-1, high enough that mobile browsers don't skip painting the
+   layer entirely, which would defeat the pre-warming. */
 #view-2.is-warm:not(.is-active) {
-  opacity: 0.001;
+  opacity: 0.02;
 }
 
 /* An invisible warmed view shouldn't burn per-frame animation/filter work:
@@ -201,13 +203,12 @@ body {
 }
 
 /* White flash that expands from the flower on tap, covering the cross-fade
-   moment. Sized/centered on the flower within the wrapper's artwork box. */
+   moment. Direct child of #app, ABOVE both views, so its animation runs on
+   its own compositor layer and never invalidates the fading views' cached
+   group textures. Centered/sized over the flower in px by main.js. */
 .view-burst {
   position: absolute;
-  left: 49.49%;
-  top: 60.16%;
-  width: 55%;
-  aspect-ratio: 1;
+  z-index: 10;
   border-radius: 50%;
   /* pre-promoted so its gradient is rasterized before the tap, not during */
   will-change: transform, opacity;
@@ -220,6 +221,10 @@ body {
   );
   opacity: 0;
   pointer-events: none;
+}
+
+.view-burst.is-live {
+  animation: burst-out 0.65s ease-out 0.08s both;
 }
 
 /* Transform-only on purpose: the glow intensity now breathes on the glow
@@ -317,8 +322,12 @@ body {
    animation slot (its keyframes re-assert opacity: 1 since the base state
    is hidden). */
 
+/* Pulse and glow-flash last exactly as long as the pre-swap delay (250ms in
+   main.js), so by the time the cross-fade starts, NOTHING inside view-1 is
+   still animating — the fading group's texture stays cached for the whole
+   fade instead of re-rendering every frame. */
 #view-1.is-committing .view-flower-wrap {
-  animation: flower-pulse 0.45s ease-out both;
+  animation: flower-pulse 0.25s ease-out both;
 }
 
 /* The "flash brighter" half of the tap feedback lives on the glow layer's
@@ -326,13 +335,9 @@ body {
    wrapper — filtering the wrapper re-rastered its whole subtree (including
    the 5-shadow glow child) every frame and made the tap itself stutter.
    Scale is fixed at the breath midpoint: the glow stops scale-breathing for
-   these 0.45s, which the burst covers anyway. */
+   this moment, which the burst covers anyway. */
 #view-1.is-committing .view-flower-glow {
-  animation: glow-flash 0.45s ease-out both;
-}
-
-#view-1.is-committing .view-burst {
-  animation: burst-out 0.65s ease-out 0.08s both;
+  animation: glow-flash 0.25s ease-out both;
 }
 
 @keyframes flower-pulse {
@@ -340,13 +345,13 @@ body {
     opacity: 1;
     transform: scale(1);
   }
-  45% {
+  60% {
     opacity: 1;
     transform: scale(1.13);
   }
   100% {
     opacity: 1;
-    transform: scale(1.07);
+    transform: scale(1.08);
   }
 }
 
@@ -355,7 +360,7 @@ body {
     opacity: 0.75;
     transform: scale(1.05);
   }
-  45%,
+  60%,
   100% {
     opacity: 1;
     transform: scale(1.05);
@@ -377,16 +382,19 @@ body {
 }
 
 /* ---- View 2 arrival ----
-   Added together with the cross-fade: the filled flower settles from
-   slightly oversized (as if just poured full), then the closing text
-   fades in last. */
+   Both one-shots are delayed past the 0.6s cross-fade on purpose: while the
+   fade runs, view-2's subtree is completely static, so its group texture is
+   rendered once and the fade is a pure two-texture blend. Then the arrival
+   plays as its own beat: flower settles from slightly oversized (as if just
+   poured full), closing text fades in last, and the flow loops/particles
+   resume at the same moment (is-fading comes off at +700ms in main.js). */
 
 #view-2.is-arriving .view-flower-wrap {
-  animation: flower-settle 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+  animation: flower-settle 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.7s both;
 }
 
 #view-2.is-arriving .view-overlay {
-  animation: enter-overlay 0.6s ease 0.35s both;
+  animation: enter-overlay 0.6s ease 0.85s both;
 }
 
 @keyframes flower-settle {

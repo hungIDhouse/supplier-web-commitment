@@ -27,7 +27,6 @@
                  shadows every frame — the main mobile lag source. -->
             <img class="view-flower-glow" src="/asset/hoabeerview1.webp" alt="" aria-hidden="true" />
             <img class="view-flower" src="/asset/hoabeerview1.webp" alt="" />
-            <div class="view-burst" aria-hidden="true"></div>
           </div>
           <img class="view-overlay" src="/asset/view1text_icon.png" alt="" />
         </div>
@@ -45,6 +44,12 @@
           <img class="view-overlay" src="/asset/view2text.png" alt="" />
         </div>
       </section>
+
+      <!-- Tap burst lives OUTSIDE both view stacks (positioned over the
+           flower by main.js): if it animated inside the fading view-1 group,
+           the group's render-to-texture would be invalidated every frame of
+           the cross-fade — the stutter right as view 2 appeared. -->
+      <div class="view-burst" aria-hidden="true"></div>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>

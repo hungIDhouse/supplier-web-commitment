@@ -12,6 +12,13 @@ const view1FlowerWrap = view1.querySelector('.view-flower-wrap');
 const view2FlowerWrap = view2.querySelector('.view-flower-wrap');
 const view1Overlay = view1.querySelector('.view-overlay');
 const view2Overlay = view2.querySelector('.view-overlay');
+const burst = document.querySelector('.view-burst');
+
+// Flower center on the 1080x1920 canvas (49.49%, 60.16% — measured from the
+// artwork's alpha channel) and the burst's diameter relative to canvas
+// width. Used to place the app-level burst overlay over the flower.
+const FLOWER_CENTER_NATIVE = { x: 534.5, y: 1155.1 };
+const BURST_DIAMETER_NATIVE = 594; // 55% of ART_W
 
 // Artwork's native canvas size — shared by the sky, line, flower and
 // overlay layers of both views (all authored at 1080x1920).
@@ -143,6 +150,15 @@ function render() {
 
   const view2Transform = applyTransform(view2Frame, [view2Line, view2FlowerWrap], view2Overlay, OVERLAY_NATIVE.view2);
   placeCanvasLayer(view2Particles, view2Transform.offsetX, view2Transform.offsetY, view2Transform.scale);
+
+  // App-level burst overlay: centered on the flower via view 1's transform
+  // (the views share the same transform whenever both are visible).
+  const { scale, offsetX, offsetY } = view1Transform;
+  const diameter = BURST_DIAMETER_NATIVE * scale;
+  burst.style.left = `${offsetX + FLOWER_CENTER_NATIVE.x * scale}px`;
+  burst.style.top = `${offsetY + FLOWER_CENTER_NATIVE.y * scale}px`;
+  burst.style.width = `${diameter}px`;
+  burst.style.height = `${diameter}px`;
 }
 
 render();
@@ -192,6 +208,7 @@ view1.addEventListener('click', (event) => {
   if (!isInTapZone(event.clientX, event.clientY)) return;
   transitioning = true;
   view1.classList.add('is-committing');
+  burst.classList.add('is-live');
   setTimeout(goToView2, COMMIT_SWAP_DELAY_MS);
 });
 
@@ -210,8 +227,14 @@ Promise.race([
   new Promise((resolve) => setTimeout(resolve, ENTRANCE_DECODE_TIMEOUT_MS)),
 ]).then(() => {
   view1.classList.add('is-enter');
-  // Pre-rasterize view-2 behind the entrance (see #view-2.is-warm in
-  // style.css) so tapping the flower doesn't pay that cost mid-transition.
+  // Pre-decode view-2's images and pre-rasterize its stack behind the
+  // entrance (see #view-2.is-warm in style.css). Without the explicit
+  // decode() the browser can defer decoding the two big webps until the
+  // swap actually paints them — measured as a ~350ms freeze right at
+  // goToView2() on a real phone.
+  for (const img of view2.querySelectorAll('img')) {
+    if (img.decode) img.decode().catch(() => {});
+  }
   view2.classList.add('is-warm');
   setTimeout(() => {
     tapEnabled = true;
