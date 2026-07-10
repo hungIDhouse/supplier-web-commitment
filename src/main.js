@@ -196,6 +196,9 @@ Promise.race([
   new Promise((resolve) => setTimeout(resolve, ENTRANCE_DECODE_TIMEOUT_MS)),
 ]).then(() => {
   view1.classList.add('is-enter');
+  // Pre-rasterize view-2 behind the entrance (see #view-2.is-warm in
+  // style.css) so tapping the flower doesn't pay that cost mid-transition.
+  view2.classList.add('is-warm');
   setTimeout(() => {
     tapEnabled = true;
   }, ENTRANCE_TAP_UNLOCK_MS);

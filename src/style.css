@@ -37,11 +37,30 @@ body {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.6s ease;
+  will-change: opacity;
 }
 
 .view.is-active {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* Painted-but-invisible (main.js adds .is-warm during view-1's entrance):
+   forces the browser to rasterize view-2's whole stack — notably the glow
+   layer's 5-shadow filter — while the user is watching the entrance,
+   instead of cold at tap time, where that raster spike read as a stutter.
+   It sits behind/above the fully opaque view-1 at 0.1% alpha: invisible. */
+#view-2.is-warm:not(.is-active) {
+  opacity: 0.001;
+}
+
+/* An invisible warmed view shouldn't burn per-frame animation/filter work:
+   keep its loops paused until it actually shows. (Also freezes view-1's
+   loops while it fades out after the swap — imperceptible during 0.6s.) */
+.view:not(.is-active) .view-line,
+.view:not(.is-active) .view-flower,
+.view:not(.is-active) .view-flower-glow {
+  animation-play-state: paused;
 }
 
 /* Fills the view exactly; clips the layers above when main.js's transform
@@ -175,6 +194,8 @@ body {
   width: 55%;
   aspect-ratio: 1;
   border-radius: 50%;
+  /* pre-promoted so its gradient is rasterized before the tap, not during */
+  will-change: transform, opacity;
   transform: translate(-50%, -50%) scale(0.3);
   background: radial-gradient(
     circle,
@@ -285,6 +306,16 @@ body {
   animation: flower-pulse 0.45s ease-out both;
 }
 
+/* The "flash brighter" half of the tap feedback lives on the glow layer's
+   opacity (compositor-only), NOT on an animated brightness() filter on the
+   wrapper — filtering the wrapper re-rastered its whole subtree (including
+   the 5-shadow glow child) every frame and made the tap itself stutter.
+   Scale is fixed at the breath midpoint: the glow stops scale-breathing for
+   these 0.45s, which the burst covers anyway. */
+#view-1.is-committing .view-flower-glow {
+  animation: glow-flash 0.45s ease-out both;
+}
+
 #view-1.is-committing .view-burst {
   animation: burst-out 0.65s ease-out 0.08s both;
 }
@@ -293,17 +324,26 @@ body {
   0% {
     opacity: 1;
     transform: scale(1);
-    filter: brightness(1);
   }
   45% {
     opacity: 1;
     transform: scale(1.13);
-    filter: brightness(1.4);
   }
   100% {
     opacity: 1;
     transform: scale(1.07);
-    filter: brightness(1.2);
+  }
+}
+
+@keyframes glow-flash {
+  0% {
+    opacity: 0.75;
+    transform: scale(1.05);
+  }
+  45%,
+  100% {
+    opacity: 1;
+    transform: scale(1.05);
   }
 }
 
