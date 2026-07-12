@@ -50,7 +50,7 @@ const MAX_FILL_RATIO = ART_RATIO / (1 - MAX_BOTTOM_CROP); // ~0.703
 // heights are each file's own natural crop height.
 const OVERLAY_NATIVE = {
   view1: { left: 135, top: 96, width: 810, height: 487 },
-  view2: { left: 135, top: 136, width: 810, height: 352 }, // nudged 40px down per design
+  view2: { left: 135, top: 96, width: 810, height: 352 },
 };
 
 // Central tap target = the hop flower area, in native px. Measured from the
