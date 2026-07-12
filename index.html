@@ -13,20 +13,17 @@
                any letterbox gap left by the contain-fit layers above it) →
                flow lines → hop flower → text/logo overlay. -->
           <img class="view-sky" src="/asset/backgroundsky.webp" alt="" />
-          <img class="view-line" src="/asset/liquid_lineview1.webp" alt="" />
+          <img class="view-line" src="/asset/liquid_lineview1v2.webp" alt="" />
           <!-- Short glowing streaks travel inward along the 4 flow curves;
                sized/positioned by main.js to match the line/flower layers. -->
           <canvas class="view-particles" aria-hidden="true"></canvas>
           <!-- Wrapper carries the entrance/tap-pulse transforms; the img
                keeps its own breathing animation — same property (transform)
-               can't run two animations on one element. -->
+               can't run two animations on one element. The v2 flower assets
+               have the white glow halo baked into the image, so there is no
+               separate CSS glow layer anymore. -->
           <div class="view-flower-wrap">
-            <!-- Glow lives on its own copy of the image with a STATIC filter
-                 chain (rasterized once); only its opacity breathes. Animating
-                 the drop-shadow chain itself forced a GPU re-raster of 5
-                 shadows every frame — the main mobile lag source. -->
-            <img class="view-flower-glow" src="/asset/hoabeerview1.webp" alt="" aria-hidden="true" />
-            <img class="view-flower" src="/asset/hoabeerview1.webp" alt="" />
+            <img class="view-flower" src="/asset/hoabiaview1v2.webp" alt="" />
           </div>
           <img class="view-overlay" src="/asset/view1text_icon.png" alt="" />
         </div>
@@ -35,16 +32,15 @@
       <section id="view-2" class="view">
         <div class="view-frame">
           <img class="view-sky" src="/asset/backgroundsky.webp" alt="" />
-          <!-- Same flow-line artwork as view 1 (design decision): keeps the
-               colored streams identical across the transition, and shares
-               one decoded image between the views. -->
-          <img class="view-line" src="/asset/liquid_lineview1.webp" alt="" />
+          <!-- v2 line art is per-view again (the v2 files share the same
+               colored flows; only the baked-in static flower differs), so
+               view 2 no longer borrows view 1's line layer. -->
+          <img class="view-line" src="/asset/liquid_lineview2v2.webp" alt="" />
           <canvas class="view-particles" aria-hidden="true"></canvas>
           <div class="view-flower-wrap">
-            <img class="view-flower-glow" src="/asset/hoabiaview2.webp" alt="" aria-hidden="true" />
-            <img class="view-flower" src="/asset/hoabiaview2.webp" alt="" />
+            <img class="view-flower" src="/asset/hoabiaview2v2.webp" alt="" />
           </div>
-          <img class="view-overlay" src="/asset/view2text.png" alt="" />
+          <img class="view-overlay" src="/asset/view2textv2.png" alt="" />
         </div>
       </section>
 

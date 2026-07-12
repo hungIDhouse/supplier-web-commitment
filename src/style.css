@@ -68,8 +68,7 @@ body {
    and pre-rasterized (.is-warm + decode() in main.js), live motion through
    the fade is affordable. */
 .view.is-warm:not(.is-active) .view-line,
-.view.is-warm:not(.is-active) .view-flower,
-.view.is-warm:not(.is-active) .view-flower-glow {
+.view.is-warm:not(.is-active) .view-flower {
   animation-play-state: paused;
 }
 
@@ -153,61 +152,34 @@ body {
   mix-blend-mode: screen;
 }
 
-/* transform-origin is the flower silhouette's own center, measured from its
-   alpha channel (bounding box 591x604+239+853 on the 1080x1920 canvas) —
-   not the canvas center, since the flower sits left-of-center. Scale never
-   dips below 1.03 so the animated flower always fully covers the static
-   glow/silhouette baked into the line layer beneath it (no gap at the
-   edges). ease-in-out per half-cycle gives the pause-at-the-extremes feel
-   of a breath in/out instead of a mechanical bounce.
-   drop-shadow (not box-shadow) hugs the flower's actual alpha silhouette
-   instead of its rectangular image box; five layered radii, near-opaque at
-   the innermost and fading out, read as one thick solid-white band (matches
-   the reference view1.png glow) instead of a thin single-line outline. */
+/* transform-origin is the flower's own center, measured from the v2
+   asset's alpha channel (bounding box 764x722+155+777 on the 1080x1920
+   canvas, glow halo included — the halo is baked into the v2 images, so
+   there is no separate CSS glow layer anymore). Scale never dips below
+   1.03 so the animated flower always fully covers the static flower baked
+   into the line layer beneath it (no gap at the edges). ease-in-out per
+   half-cycle gives the pause-at-the-extremes feel of a breath in/out
+   instead of a mechanical bounce. */
 /* Wrapper (JS-positioned to the artwork box) owns the one-shot transforms —
-   entrance pop, tap pulse, view-2 settle — while the imgs inside own the
+   entrance pop, tap pulse, view-2 settle — while the img inside owns the
    infinite breathing loop. Same property (transform) can't run two
-   animations on one element, so they're split across the two. All share
+   animations on one element, so they're split across the two. Both share
    the flower-center transform-origin. */
 .view-flower-wrap {
   z-index: 2;
-  transform-origin: 49.49% 60.16%;
+  transform-origin: 49.72% 59.27%;
   /* stays layer-promoted so the tap pulse / settle animations start without
      a promotion-raster hiccup at the tap instant */
   will-change: transform;
 }
 
-.view-flower,
-.view-flower-glow {
+.view-flower {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  transform-origin: 49.49% 60.16%;
+  transform-origin: 49.72% 59.27%;
   animation: flower-breathe 5s ease-in-out infinite;
-}
-
-/* The glow layer: a second copy of the flower sitting under the crisp one,
-   carrying the full 5-shadow chain as a STATIC filter so the GPU rasterizes
-   it once. It scale-breathes in lockstep with the crisp copy (same
-   flower-breathe, so the crisp img always covers it exactly) and breathes
-   its intensity via opacity — compositor-only work — instead of the old
-   animated-filter approach that re-rastered every frame and lagged phones. */
-.view-flower-glow {
-  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 8px rgba(255, 255, 255, 0.85))
-    drop-shadow(0 0 16px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 26px rgba(255, 255, 255, 0.5))
-    drop-shadow(0 0 38px rgba(255, 255, 255, 0.35));
-  animation: flower-breathe 5s ease-in-out infinite, glow-breathe 5s ease-in-out infinite;
-}
-
-@keyframes glow-breathe {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
-  }
 }
 
 /* White flash that expands from the flower on tap, covering the cross-fade
@@ -235,9 +207,9 @@ body {
   animation: burst-out 0.65s ease-out 0.08s both;
 }
 
-/* Transform-only on purpose: the glow intensity now breathes on the glow
-   layer's opacity (see .view-flower-glow) — animating the filter here is
-   what forced per-frame re-rasterization and lagged mobile. */
+/* Transform-only on purpose: animating a filter here (the pre-v2 approach,
+   when the glow was CSS drop-shadows instead of baked into the asset)
+   forced per-frame re-rasterization and lagged mobile. */
 @keyframes flower-breathe {
   0%,
   100% {

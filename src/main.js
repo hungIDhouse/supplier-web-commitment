@@ -14,10 +14,11 @@ const view1Overlay = view1.querySelector('.view-overlay');
 const view2Overlay = view2.querySelector('.view-overlay');
 const burst = document.querySelector('.view-burst');
 
-// Flower center on the 1080x1920 canvas (49.49%, 60.16% — measured from the
-// artwork's alpha channel) and the burst's diameter relative to canvas
-// width. Used to place the app-level burst overlay over the flower.
-const FLOWER_CENTER_NATIVE = { x: 534.5, y: 1155.1 };
+// Flower center on the 1080x1920 canvas (49.72%, 59.27% — center of the v2
+// asset's alpha bounding box 764x722+155+777, glow halo included) and the
+// burst's diameter relative to canvas width. Used to place the app-level
+// burst overlay over the flower.
+const FLOWER_CENTER_NATIVE = { x: 537, y: 1138 };
 const BURST_DIAMETER_NATIVE = 594; // 55% of ART_W
 
 // Artwork's native canvas size — shared by the sky, line, flower and
@@ -49,7 +50,7 @@ const MAX_FILL_RATIO = ART_RATIO / (1 - MAX_BOTTOM_CROP); // ~0.703
 // heights are each file's own natural crop height.
 const OVERLAY_NATIVE = {
   view1: { left: 135, top: 96, width: 810, height: 487 },
-  view2: { left: 135, top: 96, width: 810, height: 352 },
+  view2: { left: 135, top: 136, width: 810, height: 352 }, // nudged 40px down per design
 };
 
 // Central tap target = the hop flower area, in native px. Measured from the
@@ -247,13 +248,12 @@ Promise.race([
 // Each path is a list of [x%, y%] points (percent of the 1080x1920 canvas),
 // ordered from the screen edge (t=0) to the flower center (t=1). These are
 // NOT hand-drawn approximations — they were measured directly from
-// liquid_lineview1.webp's pixels (per-column, alpha-weighted centroid of the
+// the line artwork's pixels (per-column, alpha-weighted centroid of the
 // hue matching each branch's color: green/blue/yellow/orange), so particles
 // riding this path track the real streak's centerline instead of a
-// generic diagonal. Both views share the same paths: the two artworks were
-// authored on the same underlying flow silhouette (view2 just drops the
-// keyword text and color-codes the streaks pale/white instead), confirmed
-// by an ~78% IoU between their alpha silhouettes.
+// generic diagonal. Both views share the same paths: the v2 line artworks
+// use identical colored flows (only the baked-in static flower differs),
+// and every path was re-verified 100% on-texture against the v2 files.
 const FLOW_PATHS = [
   // green — left edge (top) into the top-left flower lobe
   [
@@ -296,7 +296,7 @@ const FLOW_PATHS = [
 
 // Per-flow light tints, same order as FLOW_PATHS (green, blue, yellow,
 // orange). Base colors were sampled from each bundle's mid-brightness pixels
-// in liquid_lineview1.webp, then lightened ~30% toward white so that, with
+// in the line artwork, then lightened ~30% toward white so that, with
 // the 'lighter' composite, the fibers read as glowing light of that flow's
 // color rather than flat paint. Sparkle dots keep a white-hot core with a
 // tinted halo.
