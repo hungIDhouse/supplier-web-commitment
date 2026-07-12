@@ -32,10 +32,10 @@
       <section id="view-2" class="view">
         <div class="view-frame">
           <img class="view-sky" src="/asset/backgroundsky.webp" alt="" />
-          <!-- v2 line art is per-view again (the v2 files share the same
-               colored flows; only the baked-in static flower differs), so
-               view 2 no longer borrows view 1's line layer. -->
-          <img class="view-line" src="/asset/liquid_lineview2v2.webp" alt="" />
+          <!-- View 2 borrows view 1's line art (design decision): identical
+               colored flows across the transition, one shared decoded image.
+               Note it carries view 1's baked-in rainbow static flower. -->
+          <img class="view-line" src="/asset/liquid_lineview1v2.webp" alt="" />
           <canvas class="view-particles" aria-hidden="true"></canvas>
           <div class="view-flower-wrap">
             <img class="view-flower" src="/asset/hoabiaview2v2.webp" alt="" />

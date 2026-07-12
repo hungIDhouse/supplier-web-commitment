@@ -209,14 +209,17 @@ body {
 
 /* Transform-only on purpose: animating a filter here (the pre-v2 approach,
    when the glow was CSS drop-shadows instead of baked into the asset)
-   forced per-frame re-rasterization and lagged mobile. */
+   forced per-frame re-rasterization and lagged mobile.
+   Both views run 0.97-1.01 (per design). Below scale 1 the line art's baked
+   static flower extends past the animated one — accepted as a design
+   decision (parameters only, no edited assets). */
 @keyframes flower-breathe {
   0%,
   100% {
-    transform: scale(1.03);
+    transform: scale(0.96);
   }
   50% {
-    transform: scale(1.08);
+    transform: scale(1.03);
   }
 }
 
